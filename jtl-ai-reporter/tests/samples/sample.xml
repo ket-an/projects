@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<testResults>
+    <httpSample t="123" lt="20" ts="1710000000" rc="200" rm="OK"/>
+    <httpSample t="150" lt="30" ts="1710000100" rc="200" rm="OK"/>
+</testResults>
