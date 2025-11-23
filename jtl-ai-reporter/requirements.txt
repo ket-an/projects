@@ -1,0 +1,8 @@
+pandas
+lxml
+fastapi
+uvicorn
+numpy
+scikit-learn
+python-multipart
+jmespath
