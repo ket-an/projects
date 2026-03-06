@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Git Agent</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      color: #58a6ff;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: #8b949e;
+      margin-bottom: 24px;
+    }
+
+    /* Setup */
+    #setup-panel {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 24px;
+      max-width: 720px;
+      margin-bottom: 28px;
+    }
+
+    #setup-panel h2 {
+      font-size: 1rem;
+      color: #e6edf3;
+      margin-bottom: 16px;
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    @media(max-width:600px) {
+      .input-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .input-group {
+      margin-bottom: 12px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 0.78rem;
+      color: #8b949e;
+      margin-bottom: 5px;
+    }
+
+    .input-group input {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 9px 12px;
+      color: #e6edf3;
+      font-size: 0.87rem;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: #58a6ff;
+    }
+
+    .input-group input::placeholder {
+      color: #484f58;
+    }
+
+    .setup-status {
+      margin-top: 14px;
+      font-size: 0.82rem;
+      padding: 10px 14px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .setup-status.success {
+      background: #1a7f3726;
+      border: 1px solid #3fb95044;
+      color: #3fb950;
+    }
+
+    .setup-status.error {
+      background: #da363326;
+      border: 1px solid #f8514944;
+      color: #f85149;
+    }
+
+    .setup-status.info {
+      background: #58a6ff18;
+      border: 1px solid #58a6ff44;
+      color: #58a6ff;
+    }
+
+    /* Config bar */
+    #config-bar {
+      display: none;
+      align-items: center;
+      gap: 14px;
+      flex-wrap: wrap;
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 10px 16px;
+      margin-bottom: 20px;
+      font-size: 0.82rem;
+    }
+
+    #config-bar .cfg-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      color: #8b949e;
+    }
+
+    #config-bar .cfg-item span {
+      color: #c9d1d9;
+      font-family: monospace;
+      max-width: 260px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .branch-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 0.78rem;
+      color: #58a6ff;
+    }
+
+    .workload-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #21262d;
+      border: 1px solid #30363d;
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 0.78rem;
+      color: #d29922;
+    }
+
+    .reconfigure-btn {
+      margin-left: auto;
+      background: none;
+      border: 1px solid #30363d;
+      color: #8b949e;
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
+    .reconfigure-btn:hover {
+      border-color: #58a6ff;
+      color: #58a6ff;
+    }
+
+    /* Main grid */
+    #main-grid {
+      display: none;
+      gap: 20px;
+    }
+
+    .top-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media(max-width:768px) {
+      .top-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      padding: 20px;
+    }
+
+    .card h2 {
+      font-size: 1rem;
+      color: #e6edf3;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* Validation */
+    #validation-card {
+      margin-bottom: 20px;
+    }
+
+    #validation-card h2 {
+      margin-bottom: 10px;
+    }
+
+    .check-list {
+      list-style: none;
+    }
+
+    .check-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      font-size: 0.84rem;
+      margin-bottom: 4px;
+    }
+
+    .check-list li.pass {
+      background: #1a7f3712;
+    }
+
+    .check-list li.fail {
+      background: #da363312;
+    }
+
+    .check-icon {
+      font-size: 1rem;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .check-name {
+      color: #8b949e;
+      font-size: 0.78rem;
+      min-width: 200px;
+    }
+
+    .check-msg {
+      color: #c9d1d9;
+      font-size: 0.82rem;
+    }
+
+    .validation-summary {
+      font-size: 0.82rem;
+      padding: 8px 12px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
+    .validation-summary.pass {
+      background: #1a7f3726;
+      border: 1px solid #3fb95044;
+      color: #3fb950;
+    }
+
+    .validation-summary.fail {
+      background: #da363326;
+      border: 1px solid #f8514944;
+      color: #f85149;
+    }
+
+    /* File list */
+    #file-list {
+      list-style: none;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+
+    #file-list li {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    #file-list li:hover {
+      background: #21262d;
+    }
+
+    #file-list li input[type="checkbox"] {
+      accent-color: #58a6ff;
+      cursor: pointer;
+    }
+
+    .file-name {
+      flex: 1;
+      color: #e6edf3;
+      word-break: break-all;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      padding: 2px 7px;
+      border-radius: 10px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .badge-modified {
+      background: #bb800926;
+      color: #d29922;
+      border: 1px solid #d2992244;
+    }
+
+    .badge-added {
+      background: #1a7f3726;
+      color: #3fb950;
+      border: 1px solid #3fb95044;
+    }
+
+    .badge-deleted {
+      background: #da363326;
+      color: #f85149;
+      border: 1px solid #f8514944;
+    }
+
+    .badge-untracked {
+      background: #58a6ff26;
+      color: #58a6ff;
+      border: 1px solid #58a6ff44;
+    }
+
+    .badge-staged {
+      background: #8957e526;
+      color: #bc8cff;
+      border: 1px solid #bc8cff44;
+    }
+
+    .badge-renamed {
+      background: #a5a5a526;
+      color: #aaa;
+      border: 1px solid #aaa4;
+    }
+
+    .empty-msg {
+      color: #8b949e;
+      font-size: 0.85rem;
+      padding: 8px 0;
+    }
+
+    /* Buttons */
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    button {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s, transform .1s;
+    }
+
+    button:hover {
+      opacity: .85;
+    }
+
+    button:active {
+      transform: scale(.97);
+    }
+
+    button:disabled {
+      opacity: .4;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: #1f6feb;
+      color: #fff;
+    }
+
+    .btn-indigo {
+      background: #0d419d;
+      color: #fff;
+    }
+
+    .btn-success {
+      background: #238636;
+      color: #fff;
+    }
+
+    .btn-purple {
+      background: #6e40c9;
+      color: #fff;
+    }
+
+    .btn-neutral {
+      background: #21262d;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+    }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 0.78rem;
+    }
+
+    .btn-teal {
+      background: #0e7490;
+      color: #fff;
+    }
+
+    .commit-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+
+    .commit-row input {
+      flex: 1;
+      min-width: 160px;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 8px 12px;
+      color: #e6edf3;
+      font-size: 0.85rem;
+    }
+
+    .commit-row input:focus {
+      outline: none;
+      border-color: #58a6ff;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: #000a;
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+    }
+
+    .modal {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 740px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .modal-header h3 {
+      font-size: 1rem;
+      color: #e6edf3;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      color: #8b949e;
+      font-size: 1.3rem;
+      cursor: pointer;
+      padding: 0 4px;
+    }
+
+    .modal-close:hover {
+      color: #e6edf3;
+    }
+
+    .modal-body {
+      padding: 16px 20px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .modal-tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 14px;
+    }
+
+    .modal-tab {
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #8b949e;
+    }
+
+    .modal-tab.active {
+      background: #1f6feb;
+      border-color: #1f6feb;
+      color: #fff;
+    }
+
+    /* Log panel */
+    .log-panel {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 14px;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.78rem;
+      max-height: 340px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: #8b949e;
+    }
+
+    .log-entry {
+      margin-bottom: 12px;
+      border-bottom: 1px solid #21262d;
+      padding-bottom: 10px;
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+    }
+
+    .log-time {
+      color: #484f58;
+      font-size: 0.72rem;
+      margin-bottom: 3px;
+    }
+
+    .log-action {
+      color: #58a6ff;
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .log-info {
+      color: #3fb950;
+    }
+
+    .log-error {
+      color: #f85149;
+    }
+
+    .log-warn {
+      color: #d29922;
+    }
+
+    #commit-log span.sha {
+      color: #58a6ff;
+      margin-right: 8px;
+      font-family: monospace;
+    }
+
+    #commit-log span.msg {
+      color: #c9d1d9;
+    }
+
+    #commit-log div {
+      padding: 3px 0;
+    }
+
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #0d1117;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #30363d;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>⚙️ Git Agent</h1>
+  <p class="subtitle">Clone a repo, validate structure, and track changes from your browser</p>
+
+  <!-- Setup Panel -->
+  <div id="setup-panel">
+    <h2>🔗 Configure Repository</h2>
+    <div class="input-row">
+      <div class="input-group">
+        <label>Git Repository URL</label>
+        <input id="repo-url" type="text" placeholder="https://github.com/username/repo.git" />
+      </div>
+      <div class="input-group">
+        <label>Local Directory Path</label>
+        <input id="local-path" type="text" placeholder="/home/user/projects/my-repo" />
+      </div>
+    </div>
+    <div class="input-group" style="max-width:340px;">
+      <label>Workload Name <span style="color:#484f58;">(used to validate file names in bin/)</span></label>
+      <input id="workload-name" type="text" placeholder="e.g. hybrisEOLAddressbook" />
+    </div>
+    <div class="btn-row" style="margin-top:4px;">
+      <button class="btn-primary" onclick="setupRepo()">🚀 Clone &amp; Connect</button>
+    </div>
+    <div id="setup-status" class="setup-status"></div>
+  </div>
+
+  <!-- Config Bar -->
+  <div id="config-bar">
+    <div class="cfg-item">🔗 <span id="cfg-repo">—</span></div>
+    <div class="cfg-item">📁 <span id="cfg-path">—</span></div>
+    <div class="branch-badge">🌿 <span id="branch-name">—</span></div>
+    <div class="workload-badge" id="workload-badge" style="display:none;">📌 <span id="cfg-workload">—</span></div>
+    <button class="reconfigure-btn" onclick="reconfigure()">⚙ Reconfigure</button>
+  </div>
+
+  <!-- Git Status Modal -->
+  <div class="modal-overlay" id="status-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>📋 Git Status</h3>
+        <button class="modal-close" onclick="closeStatusModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-tabs">
+          <button class="modal-tab active" onclick="switchTab('full')">Full Status</button>
+          <button class="modal-tab" onclick="switchTab('porcelain')">Porcelain (raw)</button>
+          <button class="modal-tab" onclick="switchTab('debug')">Debug Parser</button>
+        </div>
+        <div id="tab-full" class="log-panel" style="max-height:50vh;"></div>
+        <div id="tab-porcelain" class="log-panel" style="max-height:50vh;display:none;"></div>
+        <div id="tab-debug" class="log-panel" style="max-height:50vh;display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <div id="main-grid">
+
+    <!-- Validation Card (full width) -->
+    <div class="card" id="validation-card">
+      <h2>
+        🗂️ Repo Structure Validation
+        <button class="btn-teal btn-sm" style="margin-left:auto;" onclick="runValidation()">🔍 Validate Now</button>
+      </h2>
+      <div id="validation-summary" class="validation-summary" style="display:none;"></div>
+      <ul id="check-list" class="check-list">
+        <li style="color:#484f58;font-size:.83rem;">Click "Validate Now" to check your repo structure.</li>
+      </ul>
+    </div>
+
+    <!-- Bottom row -->
+    <div class="top-row">
+
+      <!-- Left: files + actions -->
+      <div>
+        <div class="card">
+          <h2>
+            📂 Modified Files
+            <button class="btn-neutral btn-sm" onclick="toggleSelectAll()">Select All</button>
+            <button class="btn-neutral btn-sm" onclick="openStatusModal()">📋 Git Status</button>
+            <button class="btn-neutral btn-sm" onclick="loadStatus()" style="margin-left:auto;">🔄 Refresh</button>
+          </h2>
+          <ul id="file-list">
+            <li><span class="empty-msg">Loading...</span></li>
+          </ul>
+
+          <div class="btn-row">
+            <button class="btn-primary" onclick="gitAdd()">➕ Add Selected</button>
+            <button class="btn-indigo" onclick="gitAddAll()">➕ Add All</button>
+          </div>
+
+          <div class="commit-row">
+            <input id="commit-msg" type="text" placeholder="Commit message..." />
+            <button class="btn-success" onclick="gitCommit()">✅ Commit</button>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn-purple" onclick="gitPush()">🚀 Push to Remote</button>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:20px;">
+          <h2>🕓 Recent Commits</h2>
+          <div id="commit-log" class="log-panel">—</div>
+        </div>
+      </div>
+
+      <!-- Right: action logs -->
+      <div class="card">
+        <h2>📋 Action Logs</h2>
+        <div id="log-output" class="log-panel"><span style="color:#484f58;">Waiting for actions...</span></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    let allSelected = false;
+    let refreshTimer = null;
+
+    async function apiFetch(url, method = "GET", body = null) {
+      const opts = { method, headers: { "Content-Type": "application/json" } };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(url, opts);
+      return res.json();
+    }
+
+    function esc(str) {
+      return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    }
+
+    function showSetupStatus(msg, type) {
+      const el = document.getElementById("setup-status");
+      el.textContent = msg;
+      el.className = `setup-status ${type}`;
+      el.style.display = "block";
+    }
+
+    function appendLog(action, data) {
+      const panel = document.getElementById("log-output");
+      const now = new Date().toLocaleTimeString();
+      const div = document.createElement("div");
+      div.className = "log-entry";
+      let html = `<div class="log-time">${now}</div><div class="log-action">[${esc(action)}]</div>`;
+      if (data.message) html += `<div class="log-info">${esc(data.message)}</div>`;
+      if (data.log) html += `<div class="log-info">${esc(data.log)}</div>`;
+      if (data.error) html += `<div class="${data.success ? "log-warn" : "log-error"}">${esc(data.error)}</div>`;
+      div.innerHTML = html;
+      panel.prepend(div);
+    }
+
+    /* ── Setup ── */
+    async function setupRepo() {
+      const repoUrl = document.getElementById("repo-url").value.trim();
+      const localPath = document.getElementById("local-path").value.trim();
+      const workloadName = document.getElementById("workload-name").value.trim();
+
+      if (!repoUrl || !localPath) { showSetupStatus("Please fill in Repo URL and Local Path.", "error"); return; }
+
+      showSetupStatus("⏳ Cloning repository, please wait...", "info");
+      const data = await apiFetch("/api/setup", "POST", { repo_url: repoUrl, local_path: localPath, workload_name: workloadName });
+
+      if (data.success) {
+        showSetupStatus(
+          data.already_cloned ? `✅ Connected to existing repo at '${localPath}'.` : `✅ Cloned to '${localPath}'.`,
+          "success"
+        );
+        document.getElementById("cfg-repo").textContent = repoUrl;
+        document.getElementById("cfg-path").textContent = localPath;
+        document.getElementById("config-bar").style.display = "flex";
+        document.getElementById("main-grid").style.display = "grid";
+
+        if (workloadName) {
+          document.getElementById("cfg-workload").textContent = workloadName;
+          document.getElementById("workload-badge").style.display = "inline-flex";
+        }
+
+        loadBranch();
+        loadStatus();
+        loadCommitLog();
+        if (refreshTimer) clearInterval(refreshTimer);
+        refreshTimer = setInterval(loadStatus, 10000);
+      } else {
+        showSetupStatus(`❌ ${data.error || "Clone failed."}`, "error");
+      }
+      appendLog("SETUP / CLONE", data);
+    }
+
+    function reconfigure() {
+      document.getElementById("config-bar").style.display = "none";
+      document.getElementById("main-grid").style.display = "none";
+      document.getElementById("setup-status").style.display = "none";
+      document.getElementById("workload-badge").style.display = "none";
+      if (refreshTimer) clearInterval(refreshTimer);
+    }
+
+    /* ── Validation ── */
+    async function runValidation() {
+      const data = await apiFetch("/api/validate");
+      const summary = document.getElementById("validation-summary");
+      const list = document.getElementById("check-list");
+
+      summary.style.display = "block";
+      if (data.success) {
+        summary.className = "validation-summary pass";
+        summary.textContent = `✅ All checks passed for workload: ${data.workload}`;
+      } else {
+        summary.className = "validation-summary fail";
+        summary.textContent = `❌ Some checks failed for workload: ${data.workload}`;
+      }
+
+      list.innerHTML = "";
+      (data.checks || []).forEach(c => {
+        const li = document.createElement("li");
+        li.className = c.passed ? "pass" : "fail";
+        li.innerHTML = `
+        <span class="check-icon">${c.passed ? "✅" : "❌"}</span>
+        <span class="check-name">${esc(c.name)}</span>
+        <span class="check-msg">${esc(c.message)}</span>
+      `;
+        list.appendChild(li);
+      });
+
+      appendLog("VALIDATE STRUCTURE", {
+        success: data.success,
+        message: data.success ? "All checks passed." : "Some checks failed.",
+        log: (data.checks || []).map(c => `${c.passed ? "✔" : "✘"} ${c.name}: ${c.message}`).join("\n"),
+        error: ""
+      });
+    }
+
+    /* ── Git Status Modal ── */
+    let currentTab = "full";
+
+    async function openStatusModal() {
+      document.getElementById("status-modal").classList.add("open");
+      await refreshStatusModal();
+    }
+
+    function closeStatusModal() {
+      document.getElementById("status-modal").classList.remove("open");
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      ["full", "porcelain", "debug"].forEach(t => {
+        document.getElementById(`tab-${t}`).style.display = t === tab ? "block" : "none";
+      });
+      document.querySelectorAll(".modal-tab").forEach((btn, i) => {
+        btn.classList.toggle("active", ["full", "porcelain", "debug"][i] === tab);
+      });
+    }
+
+    async function refreshStatusModal() {
+      const [statusData, debugData] = await Promise.all([
+        apiFetch("/api/gitstatus"),
+        apiFetch("/api/debug/rawstatus")
+      ]);
+
+      // Full status tab
+      document.getElementById("tab-full").textContent =
+        statusData.full || statusData.error || "(empty)";
+
+      // Porcelain tab
+      document.getElementById("tab-porcelain").textContent =
+        statusData.raw || "(no changes)";
+
+      // Debug parser tab — show repr of each line and parsed filename
+      const debugLines = (debugData.lines || []).map(l =>
+        `RAW     : ${l.raw_line}\nREPR    : ${l.repr}\nLEN     : ${l.len}\nCOL0    : ${l.col0}  COL1: ${l.col1}  COL2: ${l.col2}\nXY      : "${l.xy_parsed}"\nFILENAME: "${l.filename_parsed}"\n`
+      ).join("\n");
+      document.getElementById("tab-debug").textContent =
+        debugLines || debugData.error || "(no output)";
+    }
+
+    // Close modal on overlay click
+    document.getElementById("status-modal").addEventListener("click", function (e) {
+      if (e.target === this) closeStatusModal();
+    });
+
+    /* ── File Status ── */
+    function badgeClass(s) {
+      return {
+        Modified: "badge-modified", Added: "badge-added", Deleted: "badge-deleted",
+        Untracked: "badge-untracked", Renamed: "badge-renamed", Unchanged: "badge-staged"
+      }[s] || "badge-modified";
+    }
+
+    async function loadStatus() {
+      const data = await apiFetch("/api/status");
+      const ul = document.getElementById("file-list");
+      ul.innerHTML = "";
+      if (!data.files || data.files.length === 0) {
+        ul.innerHTML = `<li><span class="empty-msg">✅ No changes detected.</span></li>`;
+        return;
+      }
+      data.files.forEach(f => {
+        const staged = f.index_status !== "Unchanged" && f.index_status !== "Untracked";
+        const displayStat = staged ? f.index_status : f.work_status;
+        const li = document.createElement("li");
+        li.innerHTML = `
+        <input type="checkbox" value="${esc(f.filename)}"/>
+        <span class="file-name">${esc(f.filename)}</span>
+        <span class="badge ${badgeClass(displayStat)}">${esc(displayStat)}</span>
+        ${staged ? `<span class="badge badge-staged">Staged</span>` : ""}
+      `;
+        ul.appendChild(li);
+      });
+      allSelected = false;
+    }
+
+    function getSelectedFiles() {
+      return [...document.querySelectorAll("#file-list input[type=checkbox]:checked")].map(c => c.value);
+    }
+
+    function toggleSelectAll() {
+      allSelected = !allSelected;
+      document.querySelectorAll("#file-list input[type=checkbox]").forEach(c => c.checked = allSelected);
+    }
+
+    /* ── Git Actions ── */
+    async function gitAdd() {
+      const files = getSelectedFiles();
+      if (!files.length) { alert("Select at least one file to stage."); return; }
+      const data = await apiFetch("/api/add", "POST", { files });
+      appendLog("GIT ADD", data);
+      loadStatus();
+    }
+
+    async function gitAddAll() {
+      const data = await apiFetch("/api/add", "POST", {});
+      appendLog("GIT ADD ALL", data);
+      loadStatus();
+    }
+
+    async function gitCommit() {
+      const msg = document.getElementById("commit-msg").value.trim();
+      if (!msg) { alert("Enter a commit message."); return; }
+      const data = await apiFetch("/api/commit", "POST", { message: msg });
+      appendLog("GIT COMMIT", data);
+      if (data.success) {
+        document.getElementById("commit-msg").value = "";
+        loadStatus();
+        loadCommitLog();
+      }
+    }
+
+    async function gitPush() {
+      const data = await apiFetch("/api/push", "POST", {});
+      appendLog("GIT PUSH", data);
+    }
+
+    async function loadBranch() {
+      const data = await apiFetch("/api/branch");
+      document.getElementById("branch-name").textContent = data.branch || "unknown";
+    }
+
+    async function loadCommitLog() {
+      const data = await apiFetch("/api/log");
+      const el = document.getElementById("commit-log");
+      if (!data.log) { el.textContent = "No commits yet."; return; }
+      el.innerHTML = data.log.split("\n").map(line => {
+        const m = line.match(/^([a-f0-9]+)\s(.+)$/);
+        return m ? `<div><span class="sha">${esc(m[1])}</span><span class="msg">${esc(m[2])}</span></div>` : `<div>${esc(line)}</div>`;
+      }).join("");
+    }
+  </script>
+</body>
+
+</html>
