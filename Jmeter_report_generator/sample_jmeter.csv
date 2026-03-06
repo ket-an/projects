@@ -1,0 +1,6 @@
+timeStamp,elapsed,label,responseCode,responseMessage,threadName,dataType,success,failureMessage,bytes,sentBytes,grpThreads,allThreads,URL,Latency,IdleTime,Connect
+1676571000000,100,Login,200,OK,Thread Group 1-1,text,true,,200,100,1,1,http://example.com/login,90,0,10
+1676571001000,150,Login,200,OK,Thread Group 1-1,text,true,,200,100,1,1,http://example.com/login,140,0,10
+1676571002000,200,Search,200,OK,Thread Group 1-1,text,true,,500,100,1,1,http://example.com/search,190,0,10
+1676571003000,500,Search,500,Internal Server Error,Thread Group 1-1,text,false,Error,500,100,1,1,http://example.com/search,490,0,10
+1676571004000,120,Login,200,OK,Thread Group 1-1,text,true,,200,100,1,1,http://example.com/login,110,0,10
