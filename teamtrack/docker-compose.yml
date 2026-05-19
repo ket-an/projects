@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+
+  # ── MongoDB ────────────────────────────────────────────────────────────────
+  mongodb:
+    image: mongo:7.0
+    container_name: teamtrack-mongo
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: teamtrack
+    volumes:
+      - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - teamtrack-net
+
+  # ── Spring Boot Backend ────────────────────────────────────────────────────
+  backend:
+    build: ./backend
+    container_name: teamtrack-backend
+    ports:
+      - "8080:8080"
+    environment:
+      MONGODB_URI: mongodb://mongodb:27017/teamtrack
+      MONGODB_DATABASE: teamtrack
+      JWT_SECRET: teamtrack-super-secret-key-which-is-at-least-256-bits-long
+      MAIL_HOST: smtp.gmail.com
+      MAIL_PORT: 587
+      MAIL_USERNAME: teamtrack@example.com
+      MAIL_PASSWORD: your-email-password
+      AWS_REGION: ap-south-1
+      AWS_ACCESS_KEY: local-access-key
+      AWS_SECRET_KEY: local-secret-key
+      S3_BUCKET: teamtrack-files
+      SPRING_PROFILES_ACTIVE: default
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - teamtrack-net
+    restart: on-failure
+
+  # ── React Frontend ─────────────────────────────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_URL: http://localhost:8080/api/v1
+    container_name: teamtrack-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - teamtrack-net
+
+volumes:
+  mongo_data:
+
+networks:
+  teamtrack-net:
+    driver: bridge

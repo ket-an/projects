@@ -1,0 +1,77 @@
+server:
+  port: 8080
+  servlet:
+    context-path: /api/v1
+
+spring:
+  application:
+    name: teamtrack-backend
+
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/teamtrack}
+      database: ${MONGODB_DATABASE:teamtrack}
+      auto-index-creation: true
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:teamtrack@example.com}
+    password: ${MAIL_PASSWORD:password}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+    default-encoding: UTF-8
+
+  cache:
+    type: simple
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    default-property-inclusion: non_null
+
+  servlet:
+    multipart:
+      max-file-size: 20MB
+      max-request-size: 20MB
+
+app:
+  jwt:
+    secret: ${JWT_SECRET:teamtrack-super-secret-key-which-is-at-least-256-bits-long-for-hs256-algorithm}
+    expiration: ${JWT_EXPIRATION:86400000}   # 24 hours in ms
+    refresh-expiration: ${JWT_REFRESH_EXPIRATION:604800000}  # 7 days
+
+  aws:
+    region: ${AWS_REGION:ap-south-1}
+    s3:
+      bucket-name: ${S3_BUCKET:teamtrack-files}
+      presigned-url-expiry: 900  # 15 minutes for upload, seconds
+      report-url-expiry: 604800  # 7 days for downloads
+    access-key: ${AWS_ACCESS_KEY:local-access-key}
+    secret-key: ${AWS_SECRET_KEY:local-secret-key}
+
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:5173}
+
+  pagination:
+    default-page-size: 10
+    max-page-size: 50
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+
+logging:
+  level:
+    com.teamtrack: DEBUG
+    org.springframework.security: INFO
+    org.springframework.data.mongodb: INFO
